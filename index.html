@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Super Bot Dashboard</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fb; margin: 0; }
+    header { background: #2d3a4b; color: #fff; padding: 1rem 2rem; }
+    h1 { margin: 0; font-size: 2rem; }
+    .container { max-width: 900px; margin: 2rem auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 2rem; }
+    .section { margin-bottom: 2rem; }
+    .leaderboard, .stats-table { width: 100%; border-collapse: collapse; }
+    .leaderboard th, .leaderboard td, .stats-table th, .stats-table td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+    .leaderboard th { background: #f0f2f7; }
+    .bot-controls { display: flex; gap: 1rem; }
+    button { background: #2d3a4b; color: #fff; border: none; padding: 0.5rem 1.5rem; border-radius: 5px; cursor: pointer; }
+    button:active { background: #1b2430; }
+    .wordcloud { min-height: 120px; margin: 1rem 0; }
+    @media (max-width: 600px) { .container { padding: 1rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>WhatsApp Super Bot Dashboard</h1>
+  </header>
+  <div class="container">
+    <div class="section">
+      <h2>Statistik Grup (30 Hari Terakhir)</h2>
+      <canvas id="statsChart" height="80"></canvas>
+    </div>
+    <div class="section">
+      <h2>Leaderboard Member</h2>
+      <table class="leaderboard" id="leaderboardTable">
+        <thead><tr><th>Nama</th><th>Poin</th><th>Level</th><th>Pesan</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="section">
+      <h2>Word Cloud</h2>
+      <div class="wordcloud" id="wordcloud"></div>
+    </div>
+    <div class="section">
+      <h2>Bot Controls</h2>
+      <div class="bot-controls">
+        <button onclick="startBot()">Start Bot</button>
+        <button onclick="stopBot()">Stop Bot</button>
+        <button onclick="location.reload()">Refresh</button>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    async function fetchStats() {
+      const res = await fetch('/api/stats');
+      return res.json();
+    }
+    async function fetchLeaderboard() {
+      const res = await fetch('/api/leaderboard');
+      return res.json();
+    }
+    function renderStatsChart(data) {
+      const ctx = document.getElementById('statsChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map(d => d.date),
+          datasets: [{
+            label: 'Total Pesan',
+            data: data.map(d => d.total_messages),
+            borderColor: '#2d3a4b',
+            backgroundColor: '#2d3a4b22',
+            fill: true
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+    }
+    function renderLeaderboard(data) {
+      const tbody = document.querySelector('#leaderboardTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(row => {
+        tbody.innerHTML += `<tr><td>${row.name}</td><td>${row.points}</td><td>${row.level}</td><td>${row.total_messages}</td></tr>`;
+      });
+    }
+    function renderWordCloud(data) {
+      const wc = document.getElementById('wordcloud');
+      wc.innerHTML = '';
+      if (!data.length) return;
+      let words = JSON.parse(data[0].most_used_words || '{}');
+      Object.entries(words).forEach(([word, count]) => {
+        wc.innerHTML += `<span style="font-size:${12 + count * 2}px;margin:4px;display:inline-block;">${word}</span>`;
+      });
+    }
+    async function loadAll() {
+      const stats = await fetchStats();
+      renderStatsChart(stats);
+      const leaderboard = await fetchLeaderboard();
+      renderLeaderboard(leaderboard);
+      renderWordCloud(stats);
+    }
+    function startBot() { alert('Bot sudah berjalan otomatis!'); }
+    function stopBot() { alert('Fitur stop bot belum tersedia di versi ini.'); }
+    loadAll();
+  </script>
+</body>
+</html> 
